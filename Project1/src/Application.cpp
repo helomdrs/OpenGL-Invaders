@@ -8,6 +8,8 @@
 #include "ErrorHandler.h"
 
 bool game_running = false;
+int move_dir = 0;
+bool fire_pressed = 0;
 
 //SHADER
 void validate_shader(GLuint shader, const char* file = 0)
@@ -111,12 +113,34 @@ uint32_t rgb_to_uint32(uint8_t r, uint8_t g, uint8_t b)
     return (r << 24) | (g << 16) | (b << 8) | 255;
 }
 
+void key_callback(GLFWwindow* window, int key, int scancode, int action, int mods)
+{
+    switch (key)
+    {
+    case GLFW_KEY_ESCAPE:
+        if (action == GLFW_PRESS) game_running = false;
+        break;
+    case GLFW_KEY_D:
+        if (action == GLFW_PRESS) move_dir += 1;
+        else if (action == GLFW_RELEASE) move_dir -= 1;
+        break;
+    case GLFW_KEY_A:
+        if (action == GLFW_PRESS) move_dir -= 1;
+        else if (action == GLFW_RELEASE) move_dir += 1;
+        break;
+    case GLFW_KEY_SPACE:
+        if (action == GLFW_RELEASE) fire_pressed = true;
+        break;
+    default:
+        break;
+    }
+}
+
 int main(void)
 {
     const size_t buffer_width = 224;
     const size_t buffer_height = 256;
     const size_t bounds_offset = 30;
-    int player_move_dir = 1;
 
     GLFWwindow* window;
 
@@ -135,6 +159,9 @@ int main(void)
         glfwTerminate();
         return -1;
     }
+
+    //set the GLFW callback
+    glfwSetKeyCallback(window, key_callback);
 
     /* Make the window's context current */
     glfwMakeContextCurrent(window);
@@ -327,7 +354,9 @@ int main(void)
 
     /* Render loop until the user closes the window */
     game_running == true;
-    while (!glfwWindowShouldClose(window) && game_running)
+    int player_move_dir = 0;
+
+    while (!glfwWindowShouldClose(window))
     {
         buffer_clear(&buffer, clear_color);
 
@@ -354,17 +383,21 @@ int main(void)
             }
         }
 
-        if (game.player.x + player_sprite.width + player_move_dir >= game.width - 1)
+        // Simulate player
+        player_move_dir = 2 * move_dir;
+
+        if (player_move_dir != 0)
         {
-            game.player.x = game.width - player_sprite.width - player_move_dir - 1;
-            player_move_dir *= -1;
+            if (game.player.x + player_sprite.width + player_move_dir >= game.width)
+            {
+                game.player.x = game.width - player_sprite.width;
+            }
+            else if ((int)game.player.x + player_move_dir <= 0)
+            {
+                game.player.x = 0;
+            }
+            else game.player.x += player_move_dir;
         }
-        else if ((int)game.player.x + player_move_dir <= 0)
-        {
-            game.player.x = 0;
-            player_move_dir *= -1;
-        }
-        else game.player.x += player_move_dir;
 
         glTexSubImage2D(
             GL_TEXTURE_2D, 0, 0, 0,
