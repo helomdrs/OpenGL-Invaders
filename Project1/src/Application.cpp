@@ -7,6 +7,8 @@
 
 #include "ErrorHandler.h"
 
+bool game_running = false;
+
 //SHADER
 void validate_shader(GLuint shader, const char* file = 0)
 {
@@ -113,6 +115,8 @@ int main(void)
 {
     const size_t buffer_width = 224;
     const size_t buffer_height = 256;
+    const size_t bounds_offset = 30;
+    int player_move_dir = 1;
 
     GLFWwindow* window;
 
@@ -125,7 +129,7 @@ int main(void)
     glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
 
     /* Create a windowed mode window and its OpenGL context */
-    window = glfwCreateWindow(540, 720, "OpenGL Invaders", NULL, NULL);
+    window = glfwCreateWindow(540, 700, "OpenGL Invaders", NULL, NULL);
     if (!window)
     {
         glfwTerminate();
@@ -301,8 +305,8 @@ int main(void)
     alien_animation->frames[1] = &alien_sprite1;
 
     Game game;
-    game.width = buffer_width;
-    game.height = buffer_height;
+    game.width = buffer_width - bounds_offset;
+    game.height = buffer_height - bounds_offset;
     game.num_aliens = 55;
     game.aliens = new Alien[game.num_aliens];
     game.player.x = 112 - 5;
@@ -322,7 +326,8 @@ int main(void)
     uint32_t clear_color = rgb_to_uint32(0, 0, 0);
 
     /* Render loop until the user closes the window */
-    while (!glfwWindowShouldClose(window))
+    game_running == true;
+    while (!glfwWindowShouldClose(window) && game_running)
     {
         buffer_clear(&buffer, clear_color);
 
@@ -348,6 +353,18 @@ int main(void)
                 alien_animation = nullptr;
             }
         }
+
+        if (game.player.x + player_sprite.width + player_move_dir >= game.width - 1)
+        {
+            game.player.x = game.width - player_sprite.width - player_move_dir - 1;
+            player_move_dir *= -1;
+        }
+        else if ((int)game.player.x + player_move_dir <= 0)
+        {
+            game.player.x = 0;
+            player_move_dir *= -1;
+        }
+        else game.player.x += player_move_dir;
 
         glTexSubImage2D(
             GL_TEXTURE_2D, 0, 0, 0,
